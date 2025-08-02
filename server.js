@@ -25,6 +25,12 @@ const JWT_SECRET = process.env.JWT_SECRET || "supersecretkey";
 io.on("connection", (socket) => {
     console.log("User connected:", socket.id);
 
+    // Join room for real-time updates
+    socket.on("join", ({ userId }) => {
+        socket.join(userId.toString());
+        console.log(`User ${userId} joined room ${userId}`);
+    });
+
     socket.on("authenticate", async ({ token }) => {
         try {
             const decoded = jwt.verify(token, JWT_SECRET);
@@ -45,7 +51,9 @@ io.on("connection", (socket) => {
                 data: { senderId, receiverId, content },
             });
 
-            io.to(receiverId).emit("receiveMessage", message);
+            // Emit to both sender and receiver rooms for real-time chat
+            io.to(senderId.toString()).emit("receiveMessage", message);
+            io.to(receiverId.toString()).emit("receiveMessage", message);
         } catch (error) {
             console.log("Message send failed:", error);
         }
